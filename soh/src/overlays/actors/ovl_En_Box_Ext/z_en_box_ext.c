@@ -1,4 +1,4 @@
-#include "z_en_box.h"
+#include "z_en_box_ext.h"
 #include "objects/object_box/object_box.h"
 #include "soh_assets.h"
 #include <assert.h>
@@ -16,12 +16,12 @@ set on init unless treasure flag is set
 if clear, chest moves (Actor_MoveXZGravity) (falls, likely)
 ends up cleared from SWITCH_FLAG_FALL types when switch flag is set
 */
-#define ENBOX_MOVE_IMMOBILE (1 << 0)
+#define ENBOX_EXT_MOVE_IMMOBILE (1 << 0)
 /*
 set in the logic for SWITCH_FLAG_FALL types
 otherwise unused
 */
-#define ENBOX_MOVE_UNUSED (1 << 1)
+#define ENBOX_EXT_MOVE_UNUSED (1 << 1)
 /*
 set with 50% chance on init for SWITCH_FLAG_FALL types
 only used for SWITCH_FLAG_FALL types
@@ -29,43 +29,43 @@ ends up "blinking" (set/clear every frame) once switch flag is set,
 if some collision-related condition (?) is met
 only used for signum of z rotation
 */
-#define ENBOX_MOVE_FALL_ANGLE_SIDE (1 << 2)
+#define ENBOX_EXT_MOVE_FALL_ANGLE_SIDE (1 << 2)
 /*
 when set, gets cleared next EnBox_Update call and clip to the floor
 */
-#define ENBOX_MOVE_STICK_TO_GROUND (1 << 4)
+#define ENBOX_EXT_MOVE_STICK_TO_GROUND (1 << 4)
 
 typedef enum {
-    ENBOX_STATE_0, // waiting for player near / player available / player ? (IDLE)
-    ENBOX_STATE_1, // used only temporarily, maybe "player is ready" ?
-    ENBOX_STATE_2  // waiting for something message context-related
-} EnBoxStateUnk1FB;
+    ENBOX_EXT_STATE_0, // waiting for player near / player available / player ? (IDLE)
+    ENBOX_EXT_STATE_1, // used only temporarily, maybe "player is ready" ?
+    ENBOX_EXT_STATE_2  // waiting for something message context-related
+} EnBoxExtStateUnk1FB;
 
-void EnBox_Init(Actor* thisx, PlayState* play);
-void EnBox_Destroy(Actor* thisx, PlayState* play);
-void EnBox_Update(Actor* thisx, PlayState* play);
-void EnBox_Draw(Actor* thisx, PlayState* play);
+void EnBox_EXT_Init(Actor* thisx, PlayState* play);
+void EnBox_EXT_Destroy(Actor* thisx, PlayState* play);
+void EnBox_EXT_Update(Actor* thisx, PlayState* play);
+void EnBox_EXT_Draw(Actor* thisx, PlayState* play);
 
-void EnBox_FallOnSwitchFlag(EnBox*, PlayState*);
-void func_809C9700(EnBox*, PlayState*);
-void EnBox_AppearOnSwitchFlag(EnBox*, PlayState*);
-void EnBox_AppearOnRoomClear(EnBox*, PlayState*);
-void EnBox_AppearInit(EnBox*, PlayState*);
-void EnBox_AppearAnimation(EnBox*, PlayState*);
-void EnBox_WaitOpen(EnBox*, PlayState*);
-void EnBox_Open(EnBox*, PlayState*);
-void EnBox_UpdateTexture(EnBox*, PlayState*);
+void EnBox_EXT_FallOnSwitchFlag(EnBox*, PlayState*);
+void func_809C9700_EXT(EnBox*, PlayState*);
+void EnBox_EXT_AppearOnSwitchFlag(EnBox*, PlayState*);
+void EnBox_EXT_AppearOnRoomClear(EnBox*, PlayState*);
+void EnBox_EXT_AppearInit(EnBox*, PlayState*);
+void EnBox_EXT_AppearAnimation(EnBox*, PlayState*);
+void EnBox_EXT_WaitOpen(EnBox*, PlayState*);
+void EnBox_EXT_Open(EnBox*, PlayState*);
+void EnBox_EXT_UpdateTexture(EnBox*, PlayState*);
 
-const ActorInit En_Box_InitVars = {
-    ACTOR_EN_BOX,
+const ActorInit En_Box_EXT_InitVars = {
+    ACTOR_EN_BOX_EXT,
     ACTORCAT_CHEST,
     FLAGS,
     OBJECT_BOX,
     sizeof(EnBox),
-    (ActorFunc)EnBox_Init,
-    (ActorFunc)EnBox_Destroy,
-    (ActorFunc)EnBox_Update,
-    (ActorFunc)EnBox_Draw,
+    (ActorFunc)EnBox_EXT_Init,
+    (ActorFunc)EnBox_EXT_Destroy,
+    (ActorFunc)EnBox_EXT_Update,
+    (ActorFunc)EnBox_EXT_Draw,
     NULL,
 };
 
@@ -78,7 +78,7 @@ static InitChainEntry sInitChain[] = {
 
 static UNK_TYPE sUnused;
 
-static Gfx* EnBox_LoadChestDL(const char* dlName, const char* fallbackName) {
+static Gfx* EnBox_EXT_LoadChestDL(const char* dlName, const char* fallbackName) {
     Gfx* dl = ResourceMgr_LoadGfxByName(dlName);
 
     if (dl == NULL && fallbackName != NULL) {
@@ -88,11 +88,11 @@ static Gfx* EnBox_LoadChestDL(const char* dlName, const char* fallbackName) {
     return dl;
 }
 
-void EnBox_SetupAction(EnBox* this, EnBoxActionFunc actionFunc) {
+void EnBox_EXT_SetupAction(EnBox* this, EnBoxActionFunc actionFunc) {
     this->actionFunc = actionFunc;
 }
 
-void EnBox_ClipToGround(EnBox* this, PlayState* play) {
+void EnBox_EXT_ClipToGround(EnBox* this, PlayState* play) {
     f32 newY;
     CollisionPoly* poly;
     s32 bgId;
@@ -106,7 +106,7 @@ void EnBox_ClipToGround(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_Init(Actor* thisx, PlayState* play2) {
+void EnBox_EXT_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     EnBox* this = (EnBox*)thisx;
     AnimationHeader* anim;
@@ -206,7 +206,7 @@ void EnBox_Init(Actor* thisx, PlayState* play2) {
     }
 }
 
-void EnBox_Destroy(Actor* thisx, PlayState* play) {
+void EnBox_EXT_Destroy(Actor* thisx, PlayState* play) {
     EnBox* this = (EnBox*)thisx;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -214,7 +214,7 @@ void EnBox_Destroy(Actor* thisx, PlayState* play) {
     ResourceMgr_UnregisterSkeleton(&this->skelanime);
 }
 
-void EnBox_RandomDustKinematic(EnBox* this, Vec3f* pos, Vec3f* velocity, Vec3f* accel) {
+void EnBox_EXT_RandomDustKinematic(EnBox* this, Vec3f* pos, Vec3f* velocity, Vec3f* accel) {
     f32 randomRadius = Rand_ZeroOne() * 25.0f;
     s16 randomAngle = Rand_ZeroOne() * 0x10000;
 
@@ -234,7 +234,7 @@ void EnBox_RandomDustKinematic(EnBox* this, Vec3f* pos, Vec3f* velocity, Vec3f* 
 /**
  * Spawns dust randomly around the chest when the chest hits the ground after falling (FALL types)
  */
-void EnBox_SpawnDust(EnBox* this, PlayState* play) {
+void EnBox_EXT_SpawnDust(EnBox* this, PlayState* play) {
     s32 i;
     Vec3f pos;
     Vec3f velocity;
@@ -249,7 +249,7 @@ void EnBox_SpawnDust(EnBox* this, PlayState* play) {
 /**
  * Used while the chest is falling (FALL types)
  */
-void EnBox_Fall(EnBox* this, PlayState* play) {
+void EnBox_EXT_Fall(EnBox* this, PlayState* play) {
     f32 yDiff;
 
     this->alpha = 255;
@@ -286,7 +286,7 @@ void EnBox_Fall(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_FallOnSwitchFlag(EnBox* this, PlayState* play) {
+void EnBox_EXT_FallOnSwitchFlag(EnBox* this, PlayState* play) {
     s32 treasureFlag = this->dyna.actor.params & 0x1F;
 
     if (treasureFlag >= ENBOX_TREASURE_FLAG_UNK_MIN && treasureFlag < ENBOX_TREASURE_FLAG_UNK_MAX) {
@@ -305,7 +305,7 @@ void EnBox_FallOnSwitchFlag(EnBox* this, PlayState* play) {
 }
 
 // used for types 9, 10
-void func_809C9700(EnBox* this, PlayState* play) {
+void func_809C9700_EXT(EnBox* this, PlayState* play) {
     s32 treasureFlag = this->dyna.actor.params & 0x1F;
     Player* player = GET_PLAYER(play);
 
@@ -342,7 +342,7 @@ void func_809C9700(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_AppearOnSwitchFlag(EnBox* this, PlayState* play) {
+void EnBox_EXT_AppearOnSwitchFlag(EnBox* this, PlayState* play) {
     s32 treasureFlag = this->dyna.actor.params & 0x1F;
 
     if (treasureFlag >= ENBOX_TREASURE_FLAG_UNK_MIN && treasureFlag < ENBOX_TREASURE_FLAG_UNK_MAX) {
@@ -356,7 +356,7 @@ void EnBox_AppearOnSwitchFlag(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_AppearOnRoomClear(EnBox* this, PlayState* play) {
+void EnBox_EXT_AppearOnRoomClear(EnBox* this, PlayState* play) {
     s32 treasureFlag = this->dyna.actor.params & 0x1F;
 
     if (treasureFlag >= ENBOX_TREASURE_FLAG_UNK_MIN && treasureFlag < ENBOX_TREASURE_FLAG_UNK_MAX) {
@@ -378,7 +378,7 @@ void EnBox_AppearOnRoomClear(EnBox* this, PlayState* play) {
 /**
  * The chest is ready to appear, possibly waiting for camera/cutscene-related stuff to happen
  */
-void EnBox_AppearInit(EnBox* this, PlayState* play) {
+void EnBox_EXT_AppearInit(EnBox* this, PlayState* play) {
     if (func_8005B198() == this->dyna.actor.category || this->unk_1A8 != 0) {
         EnBox_SetupAction(this, EnBox_AppearAnimation);
         this->unk_1A8 = 0;
@@ -389,8 +389,8 @@ void EnBox_AppearInit(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_AppearAnimation(EnBox* this, PlayState* play) {
-    func_8003EC50(play, &play->colCtx.dyna, this->dyna.bgId);
+void EnBox_EXT_AppearAnimation(EnBox* this, PlayState* play) {
+    func_8003EC50_EXT(play, &play->colCtx.dyna, this->dyna.bgId);
 
     if (this->unk_1A8 < 0) {
         this->unk_1A8++;
@@ -409,7 +409,7 @@ void EnBox_AppearAnimation(EnBox* this, PlayState* play) {
 /**
  * Chest is ready to be open
  */
-void EnBox_WaitOpen(EnBox* this, PlayState* play) {
+void EnBox_EXT_WaitOpen(EnBox* this, PlayState* play) {
     f32 frameCount;
     AnimationHeader* anim;
     s32 linkAge;
@@ -458,7 +458,7 @@ void EnBox_WaitOpen(EnBox* this, PlayState* play) {
 /**
  * Plays an animation to its end, playing sounds at key points
  */
-void EnBox_Open(EnBox* this, PlayState* play) {
+void EnBox_EXT_Open(EnBox* this, PlayState* play) {
     u16 sfxId;
 
     this->dyna.actor.flags &= ~ACTOR_FLAG_REACT_TO_LENS;
@@ -503,7 +503,7 @@ void EnBox_Open(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_SpawnIceSmoke(EnBox* this, PlayState* play) {
+void EnBox_EXT_SpawnIceSmoke(EnBox* this, PlayState* play) {
     Vec3f pos;
     Vec3f vel = { 0.0f, 1.0f, 0.0f };
     Vec3f accel = { 0.0f, 0.0f, 0.0f };
@@ -534,7 +534,7 @@ void EnBox_SpawnIceSmoke(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_Update(Actor* thisx, PlayState* play) {
+void EnBox_EXT_Update(Actor* thisx, PlayState* play) {
     EnBox* this = (EnBox*)thisx;
 
     EnBox_UpdateTexture(this, play);
@@ -570,7 +570,7 @@ void EnBox_Update(Actor* thisx, PlayState* play) {
     }
 }
 
-void EnBox_UpdateTexture(EnBox* this, PlayState* play) {
+void EnBox_EXT_UpdateTexture(EnBox* this, PlayState* play) {
     bool csmc = CVarGetInteger(CVAR_ENHANCEMENT("ChestSizeAndTextureMatchContents"), 0);
     int requiresStoneAgony = CVarGetInteger(CVAR_ENHANCEMENT("ChestSizeDependsStoneOfAgony"), 0);
     GetItemCategory getItemCategory;
@@ -642,7 +642,7 @@ void EnBox_UpdateTexture(EnBox* this, PlayState* play) {
     }
 }
 
-void EnBox_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx, Gfx** gfx) {
+void EnBox_EXT_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx, Gfx** gfx) {
     EnBox* this = (EnBox*)thisx;
     s32 pad;
 
@@ -655,7 +655,7 @@ void EnBox_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot,
     }
 }
 
-Gfx* EnBox_EmptyDList(GraphicsContext* gfxCtx) {
+Gfx* EnBox_EXT_EmptyDList(GraphicsContext* gfxCtx) {
     Gfx* dListHead;
     Gfx* dList;
 
@@ -669,7 +669,7 @@ Gfx* EnBox_EmptyDList(GraphicsContext* gfxCtx) {
 }
 
 // set render mode with a focus on transparency
-Gfx* func_809CA4A0(GraphicsContext* gfxCtx) {
+Gfx* func_809CA4A0_EXT(GraphicsContext* gfxCtx) {
     Gfx* dList;
     Gfx* dListHead;
 
@@ -687,7 +687,7 @@ Gfx* func_809CA4A0(GraphicsContext* gfxCtx) {
     return dList;
 }
 
-Gfx* func_809CA518(GraphicsContext* gfxCtx) {
+Gfx* func_809CA518_EXT(GraphicsContext* gfxCtx) {
     Gfx* dList;
     Gfx* dListHead;
 
@@ -704,7 +704,7 @@ Gfx* func_809CA518(GraphicsContext* gfxCtx) {
     return dList;
 }
 
-void EnBox_Draw(Actor* thisx, PlayState* play) {
+void EnBox_EXT_Draw(Actor* thisx, PlayState* play) {
     EnBox* this = (EnBox*)thisx;
 
     OPEN_DISPS(play->state.gfxCtx);
