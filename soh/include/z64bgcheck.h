@@ -8,8 +8,8 @@ struct DynaPolyActor;
 #define COLPOLY_NORMAL_FRAC (1.0f / SHT_MAX)
 #define COLPOLY_SNORMAL(x) ((s16)((x) * SHT_MAX))
 #define COLPOLY_GET_NORMAL(n) ((n)*COLPOLY_NORMAL_FRAC)
-#define COLPOLY_VIA_FLAG_TEST(vIA, flags) ((vIA) & (((flags)&7) << 13))
-#define COLPOLY_VTX_INDEX(vI) ((vI)&0x1FFF)
+#define COLPOLY_VIA_FLAG_TEST(vIA, flags) ((vIA) & (((flags)&7) << 29))
+#define COLPOLY_VTX_INDEX(vI) ((vI)&0x1FFFFFFF)
 
 #define DYNAPOLY_INVALIDATE_LOOKUP (1 << 0)
 
@@ -37,12 +37,12 @@ typedef struct {
 typedef struct {
     /* 0x00 */ u16 type;
     union {
-        u16 vtxData[3];
+        u32 vtxData[3];
         struct {
-            /* 0x02 */ u16 flags_vIA; // 0xE000 is poly exclusion flags (xpFlags), 0x1FFF is vtxId
-            /* 0x04 */ u16 flags_vIB; // 0xE000 is flags, 0x1FFF is vtxId
+            /* 0x02 */ u32 flags_vIA; // 0xE000 is poly exclusion flags (xpFlags), 0x1FFF is vtxId
+            /* 0x04 */ u32 flags_vIB; // 0xE000 is flags, 0x1FFF is vtxId
                                       // 0x2000 = poly IsConveyor surface
-            /* 0x06 */ u16 vIC;
+            /* 0x06 */ u32 vIC;
         };
     };
     /* 0x08 */ Vec3s normal; // Unit normal vector
